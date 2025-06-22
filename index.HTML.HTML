@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nature's Calculators</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- Tone.js CDN for button click sound -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            /* New high-quality background image */
+            background-image: url('https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?q=80&w=2080&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D');
+            background-size: cover;
+            background-attachment: fixed;
+            background-position: center;
+            display: flex;
+            flex-direction: column; /* Allow content and watermark to stack */
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            position: relative; /* For watermark positioning */
+            overflow-x: hidden; /* Prevent horizontal scroll on some animations */
+        }
+        .container {
+            background-color: rgba(255, 255, 255, 0.85); /* Slightly less transparency for better legibility on cards */
+            backdrop-filter: blur(3px); /* Reduced blur to make background clearer */
+            border-radius: 1.5rem;
+            padding: 2rem;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            max-width: 1400px; /* Increased max-width to accommodate more calculators */
+            width: 100%;
+            display: grid;
+            gap: 1.5rem;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); /* Adjusted min-width for more columns */
+            animation: fadeIn 1.5s ease-out forwards; /* Added fade-in animation for the container */
+        }
+        .calculator-card {
+            background-color: #ECFDF5;
+            border: 1px solid #A7F3D0;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out; /* Added box-shadow to transition */
+        }
+        .calculator-card:hover {
+            transform: translateY(-8px); /* More pronounced lift */
+            box-shadow: 0 12px 25px rgba(0, 0, 0, 0.2); /* More pronounced shadow */
+        }
+        .calculator-card h3 {
+            color: #047857;
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+        .input-group {
+            margin-bottom: 1rem;
+        }
+        .input-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #065F46;
+            font-weight: 600;
+        }
+        .input-group input[type="number"],
+        .input-group input[type="text"],
+        .input-group select,
+        .input-group input[type="date"] {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #34D399;
+            border-radius: 0.5rem;
+            outline: none;
+            font-size: 1rem;
+            color: #064E3B;
+            background-color: #F0FFF4;
+        }
+        .input-group input[type="number"]:focus,
+        .input-group input[type="text"]:focus,
+        .input-group select:focus,
+        .input-group input[type="date"]:focus {
+            border-color: #059669;
+            box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.3); /* Slightly larger focus shadow */
+        }
+        .button-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            margin-top: 1rem;
+            justify-content: center;
+        }
+        .btn {
+            background-color: #059669;
+            color: white;
+            padding: 0.75rem 1.25rem;
+            border-radius: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out, box-shadow 0.2s ease-in-out;
+            border: none;
+            flex-grow: 1;
+            min-width: 80px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Initial button shadow */
+        }
+        .btn:hover {
+            background-color: #047857;
+            transform: translateY(-3px); /* More noticeable lift on hover */
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2); /* Enhanced shadow on hover */
+        }
+        .btn:active {
+            transform: translateY(0);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); /* Press-down effect */
+        }
+        .btn-secondary {
+            background-color: #6EE7B7;
+            color: #064E3B;
+        }
+        .btn-secondary:hover {
+            background-color: #34D399;
+        }
+        .result-area {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            background-color: #D1FAE5;
+            border: 1px dashed #34D399;
+            border-radius: 0.75rem;
+            color: #065F46;
+            font-weight: 600;
+            text-align: center;
+            min-height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            word-break: break-word;
+        }
+        .result-area.error {
+            background-color: #FEE2E2;
+            border-color: #EF4444;
+            color: #DC2626;
+        }
+        /* Watermark style (English) */
+        .watermark {
+            position: fixed;
+            bottom: 20px; /* Adjusted position */
+            right: 20px; /* Adjusted position */
+            color: rgba(0, 0, 0, 0.4); /* Less transparent */
+            font-size: 1rem; /* Bigger size */
+            font-weight: 600; /* Bolder */
+            user-select: none;
+            pointer-events: none;
+            z-index: 1000;
+            animation: watermarkFade 4s infinite alternate; /* Added animation */
+        }
+        /* New watermark style for Tamil text */
+        .watermark-tamil {
+            position: fixed;
+            bottom: 20px; /* Adjusted position */
+            left: 20px; /* Adjusted position */
+            color: rgba(0, 0, 0, 0.4); /* Less transparent */
+            font-size: 1rem; /* Bigger size */
+            font-weight: 600; /* Bolder */
+            user-select: none;
+            pointer-events: none;
+            z-index: 1000;
+            animation: watermarkFade 4s infinite alternate; /* Added animation */
+        }
+        /* Loader for API calls */
+        .loader {
+            border: 4px solid #f3f3f3; /* Light grey */
+            border-top: 4px solid #059669; /* Green */
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            margin-left: 10px;
+            vertical-align: middle;
+            display: none; /* Hidden by default */
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Keyframes for container fade-in */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Keyframes for Nature Insight button pulse */
+        @keyframes pulse {
+            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(5, 150, 105, 0.7); }
+            70% { transform: scale(1.03); box-shadow: 0 0 0 10px rgba(5, 150, 105, 0); }
+            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(5, 150, 105, 0); }
+        }
+        .btn-pulse {
+            animation: pulse 2s infinite;
+        }
+
+        /* Keyframes for watermark fade animation */
+        @keyframes watermarkFade {
+            0% { opacity: 0.5; }
+            50% { opacity: 0.9; }
+            100% { opacity: 0.5; }
+        }
+    </style>
+</head>
+<body class="selection:bg-green-200">
+    <div class="container">
+        <!-- Calculator 1: Basic Arithmetic -->
+        <div class="calculator-card">
+            <h3>Basic Arithmetic</h3>
+            <div class="input-group">
+                <label for="num1">Number 1:</label>
+                <input type="number" id="num1" placeholder="Enter first number">
+            </div>
+            <div class="input-group">
+                <label for="num2">Number 2:</label>
+                <input type="number" id="num2" placeholder="Enter second number">
+            </div>
+            <div class="button-group">
+                <button class="btn" onclick="calculateArithmetic('+')">+</button>
+                <button class="btn" onclick="calculateArithmetic('-')">-</button>
+                <button class="btn" onclick="calculateArithmetic('*')">*</button>
+                <button class="btn" onclick="calculateArithmetic('/')">/</button>
+                <button class="btn btn-secondary" onclick="clearArithmetic()">Clear</button>
+            </div>
+            <div id="arithmeticResult" class="result-area">Result:</div>
+        </div>
+
+        <!-- Calculator 2: BMI Calculator -->
+        <div class="calculator-card">
+            <h3>BMI Calculator</h3>
+            <div class="input-group">
+                <label for="weight">Weight (kg):</label>
+                <input type="number" id="weight" placeholder="e.g., 70" step="0.1">
+            </div>
+            <div class="input-group">
+                <label for="height">Height (cm):</label>
+                <input type="number" id="height" placeholder="e.g., 175" step="0.1">
+            </div>
+            <div class="button-group">
+                <button class="btn" onclick="calculateBMI()">Calculate BMI</button>
+                <button class="btn btn-secondary" onclick="clearBMI()">Clear</button>
+            </div>
+            <div id="bmiResult" class="result-area">Result:</div>
+        </div>
+
+        <!-- Calculator 3: Temperature Converter -->
+        <div class="calculator-card">
+            <h3>Temperature Converter</h3>
+            <div class="input-group">
+                <label for="tempInput">Value:</label>
+                <input type="number" id="tempInput" placeholder="Enter temperature" step="0.1">
+            </div>
+            <div class="input-group">
+                <label for="tempUnit">Unit:</label>
+                <select id="tempUnit">
+                    <option value="celsius">Celsius</option>
+                    <option value="fahrenheit">Fahrenheit</option>
+                </select>
+            </div>
+            <div class="button-group">
+                <button class="btn" onclick="convertTemperature()">Convert</button>
+                <button class="btn btn-secondary" onclick="clearTemperature()">Clear</button>
+            </div>
+            <div id="temperatureResult" class="result-area">Result:</div>
+        </div>
+
+        <!-- Calculator 4: Currency Converter (Mock) -->
+        <div class="calculator-card">
+            <h3>Currency Converter</h3>
+            <div class="input-group">
+                <label for="currencyAmount">Amount:</label>
+                <input type="number" id="currencyAmount" placeholder="e.g., 100" step="0.01">
+            </div>
+            <div class="input-group">
+                <label for="fromCurrency">From:</label>
+                <select id="fromCurrency">
+                    <option value="USD">USD</option>
+                    <option value="EUR">EUR</option>
+                    <option value="GBP">GBP</option>
+                    <option value="JPY">JPY</option>
+                    <option value="CAD">CAD</option>
+                </select>
+            </div>
+            <div class="input-group">
+                <label for="toCurrency">To:</label>
+                <select id="toCurrency">
+                    <option value="USD">USD</option>
+                    <option value="EUR">EUR</option>
+                    <option value="GBP">GBP</option>
+                    <option value="JPY">JPY</option>
+                    <option value="CAD">CAD</option>
+                </select>
+            </div>
+            <div class="button-group">
+                <button class="btn" onclick="convertCurrency()">Convert</button>
+                <button class="btn btn-secondary" onclick="clearCurrency()">Clear</button>
+            </div>
+            <div id="currencyResult" class="result-area">Result:</div>
+        </div>
+
+        <!-- Calculator 5: Unit Converter (Length) -->
+        <div class="calculator-card">
+            <h3>Length Converter</h3>
+            <div class="input-group">
+                <label for="lengthValue">Value:</label>
+                <input type="number" id="lengthValue" placeholder="e.g., 100" step="0.001">
+            </div>
+            <div class="input-group">
+                <label for="fromUnit">From Unit:</label>
+                <select id="fromUnit">
+                    <option value="cm">Centimeters (cm)</option>
+                    <option value="m">Meters (m)</option>
+                    <option value="km">Kilometers (km)</option>
+                    <option value="inch">Inches (in)</option>
+                    <option value="ft">Feet (ft)</option>
+                    <option value="mile">Miles (mi)</option>
+                </select>
+            </div>
+            <div class="input-group">
+                <label for="toUnit">To Unit:</label>
+                <select id="toUnit">
+                    <option value="cm">Centimeters (cm)</option>
+                    <option value="m">Meters (m)</option>
+                    <option value="km">Kilometers (km)</option>
+                    <option value="inch">Inches (in)</option>
+                    <option value="ft">Feet (ft)</option>
+                    <option value="mile">Miles (mi)</option>
+                </select>
+            </div>
+            <div class="button-group">
+                <button class="btn" onclick="convertLength()">Convert</button>
+                <button class="btn btn-secondary" onclick="clearLength()">Clear</button>
+            </div>
+            <div id="lengthResult" class="result-area">Result:</div>
+        </div>
+
+        <!-- Calculator 6: Percentage Calculator -->
+        <div class="calculator-card">
+            <h3>Percentage Calculator</h3>
+            <div class="input-group">
+                <label for="partValue">Part:</label>
+                <input type="number" id="partValue" placeholder="e.g., 25" step="0.01">
+            </div>
+            <div class="input-group">
+                <label for="totalValue">Total:</label>
+                <input type="number" id="totalValue" placeholder="e.g., 100" step="0.01">
+            </div>
+            <div class="button-group">
+                <button class="btn" onclick="calculatePercentage()">Calculate %</button>
+                <button class="btn" onclick="calculateValueOfPercentage()">Calculate Value</button>
+                <button class="btn btn-secondary" onclick="clearPercentage()">Clear</button>
+            </div>
+            <div id="percentageResult" class="result-area">Result:</div>
+        </div>
+
+        <!-- Calculator 7: Tip Calculator -->
+        <div class="calculator-card">
+            <h3>Tip Calculator</h3>
+            <div class="input-group">
+                <label for="billAmount">Bill Amount ($):</label>
+                <input type="number" id="billAmount" placeholder="e.g., 50" step="0.01">
+            </div>
+            <div class="input-group">
+                <label for="tipPercentage">Tip Percentage (%):</label>
+                <input type="number" id="tipPercentage" placeholder="e.g., 15" step="1" min="0" max="100">
+            </div>
+            <div class="input-group">
+                <label for="numPeople">Number of People:</label>
+                <input type="number" id="numPeople" placeholder="e.g., 2" step="1" min="1">
+            </div>
+            <div class="button-group">
+                <button class="btn" onclick="calculateTip()">Calculate Tip</button>
+                <button class="btn btn-secondary" onclick="clearTip()">Clear</button>
+            </div>
+            <div id="tipResult" class="result-area">Result:</div>
+        </div>
+
+        <!-- New Calculator Card: Simple Interest Calculator -->
+        <div class="calculator-card">
+            <h3>Simple Interest</h3>
+            <div class="input-group">
+                <label for="principal">Principal Amount ($):</label>
+                <input type="number" id="principal" placeholder="e.g., 1000" step="0.01">
+            </div>
+            <div class="input-group">
+                <label for="rate">Annual Interest Rate (%):</label>
+                <input type="number" id="rate" placeholder="e.g., 5" step="0.1">
+            </div>
+            <div class="input-group">
+                <label for="time">Time (Years):</label>
+                <input type="number" id="time" placeholder="e.g., 3" step="0.1">
+            </div>
+            <div class="button-group">
+                <button class="btn" onclick="calculateSimpleInterest()">Calculate</button>
+                <button class="btn btn-secondary" onclick="clearSimpleInterest()">Clear</button>
+            </div>
+            <div id="simpleInterestResult" class="result-area">Result:</div>
+        </div>
+
+        <!-- New Calculator Card: Discount Calculator -->
+        <div class="calculator-card">
+            <h3>Discount Calculator</h3>
+            <div class="input-group">
+                <label for="originalPrice">Original Price ($):</label>
+                <input type="number" id="originalPrice" placeholder="e.g., 100" step="0.01">
+            </div>
+            <div class="input-group">
+                <label for="discountRate">Discount Rate (%):</label>
+                <input type="number" id="discountRate" placeholder="e.g., 20" step="0.1">
+            </div>
+            <div class="button-group">
+                <button class="btn" onclick="calculateDiscount()">Calculate</button>
+                <button class="btn btn-secondary" onclick="clearDiscount()">Clear</button>
+            </div>
+            <div id="discountResult" class="result-area">Result:</div>
+        </div>
+
+        <!-- New Calculator Card: Days Between Dates -->
+        <div class="calculator-card">
+            <h3>Days Between Dates</h3>
+            <div class="input-group">
+                <label for="startDate">Start Date:</label>
+                <input type="date" id="startDate">
+            </div>
+            <div class="input-group">
+                <label for="endDate">End Date:</label>
+                <input type="date" id="endDate">
+            </div>
+            <div class="button-group">
+                <button class="btn" onclick="calculateDaysBetweenDates()">Calculate</button>
+                <button class="btn btn-secondary" onclick="clearDaysBetweenDates()">Clear</button>
+            </div>
+            <div id="daysBetweenDatesResult" class="result-area">Result:</div>
+        </div>
+
+        <!-- New Calculator Card: Nature Insight (LLM Feature) -->
+        <div class="calculator-card">
+            <h3>Nature Insight ✨</h3>
+            <p class="text-center text-sm text-gray-600 mb-4">Click below to discover a fascinating nature fact!</p>
+            <div class="button-group">
+                <button class="btn btn-pulse" onclick="generateNatureFact()">✨ Get Nature Fact ✨</button>
+                <div id="factLoader" class="loader"></div>
+            </div>
+            <div id="natureFactResult" class="result-area">Your nature fact will appear here.</div>
+        </div>
+    </div>
+
+    <!-- Watermark (English) -->
+    <div class="watermark">CREATED BY MIDHUN</div>
+
+    <!-- Watermark (Tamil) -->
+    <div class="watermark-tamil">மிதுன் உருவாக்கியது</div>
+
+    <script>
+        // Initialize Tone.js synth for click sound
+        const clickSynth = new Tone.MembraneSynth().toDestination();
+
+        // Helper function to play click sound
+        function playClickSound() {
+            // Only play if audio context is active (user interaction initiates it)
+            if (Tone.context.state !== 'running') {
+                Tone.start();
+            }
+            clickSynth.triggerAttackRelease('C4', '8n'); // A simple click sound
+        }
+
+        // Add event listeners to all buttons to play click sound
+        document.addEventListener('DOMContentLoaded', () => {
+            const buttons = document.querySelectorAll('.btn');
+            buttons.forEach(button => {
+                button.addEventListener('click', playClickSound);
+            });
+        });
+
+
+        // Helper function to update results
+        function updateResult(elementId, message, isError = false) {
+            const resultElement = document.getElementById(elementId);
+            if (resultElement) {
+                resultElement.innerHTML = message; // Use innerHTML to allow for <br> tags
+                if (isError) {
+                    resultElement.classList.add('error');
+                } else {
+                    resultElement.classList.remove('error');
+                }
+            }
+        }
+
+        // --- Calculator 1: Basic Arithmetic ---
+        function calculateArithmetic(operator) {
+            const num1 = parseFloat(document.getElementById('num1').value);
+            const num2 = parseFloat(document.getElementById('num2').value);
+            let result;
+
+            if (isNaN(num1) || isNaN(num2)) {
+                updateResult('arithmeticResult', 'Please enter valid numbers.', true);
+                return;
+            }
+
+            switch (operator) {
+                case '+': result = num1 + num2; break;
+                case '-': result = num1 - num2; break;
+                case '*': result = num1 * num2; break;
+                case '/':
+                    if (num2 === 0) {
+                        updateResult('arithmeticResult', 'Cannot divide by zero.', true);
+                        return;
+                    }
+                    result = num1 / num2;
+                    break;
+                default:
+                    updateResult('arithmeticResult', 'Invalid operator.', true);
+                    return;
+            }
+            updateResult('arithmeticResult', `Result: ${result.toFixed(2)}`);
+        }
+
+        function clearArithmetic() {
+            document.getElementById('num1').value = '';
+            document.getElementById('num2').value = '';
+            updateResult('arithmeticResult', 'Result:');
+        }
+
+        // --- Calculator 2: BMI Calculator ---
+        function calculateBMI() {
+            const weight = parseFloat(document.getElementById('weight').value); // in kg
+            const heightCm = parseFloat(document.getElementById('height').value); // in cm
+
+            if (isNaN(weight) || isNaN(heightCm) || weight <= 0 || heightCm <= 0) {
+                updateResult('bmiResult', 'Please enter valid positive weight and height.', true);
+                return;
+            }
+
+            const heightM = heightCm / 100; // convert cm to meters
+            const bmi = weight / (heightM * heightM);
+            let category = '';
+
+            if (bmi < 18.5) {
+                category = 'Underweight';
+            } else if (bmi >= 18.5 && bmi < 24.9) {
+                category = 'Normal weight';
+            } else if (bmi >= 25 && bmi < 29.9) {
+                category = 'Overweight';
+            } else {
+                category = 'Obesity';
+            }
+            updateResult('bmiResult', `BMI: ${bmi.toFixed(2)} (${category})`);
+        }
+
+        function clearBMI() {
+            document.getElementById('weight').value = '';
+            document.getElementById('height').value = '';
+            updateResult('bmiResult', 'Result:');
+        }
+
+        // --- Calculator 3: Temperature Converter ---
+        function convertTemperature() {
+            const temp = parseFloat(document.getElementById('tempInput').value);
+            const unit = document.getElementById('tempUnit').value;
+            let result;
+
+            if (isNaN(temp)) {
+                updateResult('temperatureResult', 'Please enter a valid temperature.', true);
+                return;
+            }
+
+            if (unit === 'celsius') {
+                // Convert Celsius to Fahrenheit
+                result = (temp * 9/5) + 32;
+                updateResult('temperatureResult', `${temp}°C is ${result.toFixed(2)}°F`);
+            } else if (unit === 'fahrenheit') {
+                // Convert Fahrenheit to Celsius
+                result = (temp - 32) * 5/9;
+                updateResult('temperatureResult', `${temp}°F is ${result.toFixed(2)}°C`);
+            }
+        }
+
+        function clearTemperature() {
+            document.getElementById('tempInput').value = '';
+            document.getElementById('tempUnit').value = 'celsius';
+            updateResult('temperatureResult', 'Result:');
+        }
+
+        // --- Calculator 4: Currency Converter (Mock) ---
+        const exchangeRates = {
+            USD: { EUR: 0.92, GBP: 0.79, JPY: 158.00, CAD: 1.37, USD: 1.00 },
+            EUR: { USD: 1.08, GBP: 0.86, JPY: 171.74, CAD: 1.49, EUR: 1.00 },
+            GBP: { USD: 1.27, EUR: 1.16, JPY: 200.00, CAD: 1.73, GBP: 1.00 },
+            JPY: { USD: 0.0063, EUR: 0.0058, GBP: 0.0050, CAD: 0.0087, JPY: 1.00 },
+            CAD: { USD: 0.73, EUR: 0.67, GBP: 0.58, JPY: 114.62, CAD: 1.00 }
+        };
+
+        function convertCurrency() {
+            const amount = parseFloat(document.getElementById('currencyAmount').value);
+            const from = document.getElementById('fromCurrency').value;
+            const to = document.getElementById('toCurrency').value;
+            let result;
+
+            if (isNaN(amount) || amount < 0) {
+                updateResult('currencyResult', 'Please enter a valid positive amount.', true);
+                return;
+            }
+
+            if (from === to) {
+                result = amount;
+                updateResult('currencyResult', `${amount.toFixed(2)} ${from} is ${result.toFixed(2)} ${to}`);
+                return;
+            }
+
+            if (exchangeRates[from] && exchangeRates[from][to]) {
+                result = amount * exchangeRates[from][to];
+                updateResult('currencyResult', `${amount.toFixed(2)} ${from} is ${result.toFixed(2)} ${to}`);
+            } else {
+                updateResult('currencyResult', 'Exchange rate not available for this pair.', true);
+            }
+        }
+
+        function clearCurrency() {
+            document.getElementById('currencyAmount').value = '';
+            document.getElementById('fromCurrency').value = 'USD';
+            document.getElementById('toCurrency').value = 'EUR';
+            updateResult('currencyResult', 'Result:');
+        }
+
+        // --- Calculator 5: Unit Converter (Length) ---
+        // Conversion factor to meters first, then from meters to target unit
+        const lengthConversionFactors = {
+            cm: 0.01,
+            m: 1,
+            km: 1000,
+            inch: 0.0254,
+            ft: 0.3048,
+            mile: 1609.34
+        };
+
+        function convertLength() {
+            const value = parseFloat(document.getElementById('lengthValue').value);
+            const fromUnit = document.getElementById('fromUnit').value;
+            const toUnit = document.getElementById('toUnit').value;
+            let result;
+
+            if (isNaN(value) || value < 0) {
+                updateResult('lengthResult', 'Please enter a valid positive length value.', true);
+                return;
+            }
+
+            if (fromUnit === toUnit) {
+                result = value;
+                updateResult('lengthResult', `${value.toFixed(3)} ${fromUnit} is ${result.toFixed(3)} ${toUnit}`);
+                return;
+            }
+
+            // Convert from 'fromUnit' to meters
+            const valueInMeters = value * lengthConversionFactors[fromUnit];
+
+            // Convert from meters to 'toUnit'
+            result = valueInMeters / lengthConversionFactors[toUnit];
+
+            updateResult('lengthResult', `${value.toFixed(3)} ${fromUnit} is ${result.toFixed(3)} ${toUnit}`);
+        }
+
+        function clearLength() {
+            document.getElementById('lengthValue').value = '';
+            document.getElementById('fromUnit').value = 'cm';
+            document.getElementById('toUnit').value = 'm';
+            updateResult('lengthResult', 'Result:');
+        }
+
+        // --- Calculator 6: Percentage Calculator ---
+        function calculatePercentage() {
+            const part = parseFloat(document.getElementById('partValue').value);
+            const total = parseFloat(document.getElementById('totalValue').value);
+
+            if (isNaN(part) || isNaN(total) || total === 0) {
+                updateResult('percentageResult', 'Please enter valid numbers (total cannot be zero).', true);
+                return;
+            }
+            if (total < 0 || part < 0) {
+                 updateResult('percentageResult', 'Please enter positive numbers.', true);
+                 return;
+            }
+
+            const percentage = (part / total) * 100;
+            updateResult('percentageResult', `${part} is ${percentage.toFixed(2)}% of ${total}`);
+        }
+
+        function calculateValueOfPercentage() {
+            const percentage = parseFloat(document.getElementById('partValue').value); // Reusing partValue for percentage input
+            const total = parseFloat(document.getElementById('totalValue').value);
+
+            if (isNaN(percentage) || isNaN(total)) {
+                updateResult('percentageResult', 'Please enter valid numbers.', true);
+                return;
+            }
+             if (percentage < 0 || total < 0) {
+                 updateResult('percentageResult', 'Please enter positive numbers.', true);
+                 return;
+            }
+
+            const value = (percentage / 100) * total;
+            updateResult('percentageResult', `${percentage.toFixed(2)}% of ${total} is ${value.toFixed(2)}`);
+        }
+
+        function clearPercentage() {
+            document.getElementById('partValue').value = '';
+            document.getElementById('totalValue').value = '';
+            updateResult('percentageResult', 'Result:');
+        }
+
+        // --- Calculator 7: Tip Calculator ---
+        function calculateTip() {
+            const billAmount = parseFloat(document.getElementById('billAmount').value);
+            const tipPercentage = parseFloat(document.getElementById('tipPercentage').value);
+            const numPeople = parseInt(document.getElementById('numPeople').value);
+
+            if (isNaN(billAmount) || isNaN(tipPercentage) || isNaN(numPeople) || billAmount < 0 || tipPercentage < 0 || numPeople <= 0) {
+                updateResult('tipResult', 'Please enter valid positive numbers for all fields.', true);
+                return;
+            }
+
+            const tipAmount = billAmount * (tipPercentage / 100);
+            const totalBill = billAmount + tipAmount;
+            const billPerPerson = totalBill / numPeople;
+
+            updateResult('tipResult',
+                `Tip: $${tipAmount.toFixed(2)}<br>Total Bill: $${totalBill.toFixed(2)}<br>Each Person: $${billPerPerson.toFixed(2)}`
+            );
+        }
+
+        function clearTip() {
+            document.getElementById('billAmount').value = '';
+            document.getElementById('tipPercentage').value = '';
+            document.getElementById('numPeople').value = '';
+            updateResult('tipResult', 'Result:');
+        }
+
+        // --- Calculator 8: Simple Interest Calculator ---
+        function calculateSimpleInterest() {
+            const principal = parseFloat(document.getElementById('principal').value);
+            const rate = parseFloat(document.getElementById('rate').value);
+            const time = parseFloat(document.getElementById('time').value);
+
+            if (isNaN(principal) || isNaN(rate) || isNaN(time) || principal < 0 || rate < 0 || time < 0) {
+                updateResult('simpleInterestResult', 'Please enter valid positive numbers.', true);
+                return;
+            }
+
+            const interest = (principal * rate * time) / 100;
+            const totalAmount = principal + interest;
+            updateResult('simpleInterestResult', `Interest: $${interest.toFixed(2)}<br>Total Amount: $${totalAmount.toFixed(2)}`);
+        }
+
+        function clearSimpleInterest() {
+            document.getElementById('principal').value = '';
+            document.getElementById('rate').value = '';
+            document.getElementById('time').value = '';
+            updateResult('simpleInterestResult', 'Result:');
+        }
+
+        // --- Calculator 9: Discount Calculator ---
+        function calculateDiscount() {
+            const originalPrice = parseFloat(document.getElementById('originalPrice').value);
+            const discountRate = parseFloat(document.getElementById('discountRate').value);
+
+            if (isNaN(originalPrice) || isNaN(discountRate) || originalPrice < 0 || discountRate < 0 || discountRate > 100) {
+                updateResult('discountResult', 'Please enter valid positive price and discount (0-100%).', true);
+                return;
+            }
+
+            const discountAmount = originalPrice * (discountRate / 100);
+            const finalPrice = originalPrice - discountAmount;
+            updateResult('discountResult', `Discount: $${discountAmount.toFixed(2)}<br>Final Price: $${finalPrice.toFixed(2)}`);
+        }
+
+        function clearDiscount() {
+            document.getElementById('originalPrice').value = '';
+            document.getElementById('discountRate').value = '';
+            updateResult('discountResult', 'Result:');
+        }
+
+        // --- Calculator 10: Days Between Dates ---
+        function calculateDaysBetweenDates() {
+            const startDate = new Date(document.getElementById('startDate').value);
+            const endDate = new Date(document.getElementById('endDate').value);
+
+            if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+                updateResult('daysBetweenDatesResult', 'Please select valid dates.', true);
+                return;
+            }
+
+            const diffTime = Math.abs(endDate - startDate);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            updateResult('daysBetweenDatesResult', `Days Between: ${diffDays} days`);
+        }
+
+        function clearDaysBetweenDates() {
+            document.getElementById('startDate').value = '';
+            document.getElementById('endDate').value = '';
+            updateResult('daysBetweenDatesResult', 'Result:');
+        }
+
+
+        // --- LLM Feature: Generate Nature Fact ---
+        async function generateNatureFact() {
+            const resultElement = document.getElementById('natureFactResult');
+            const loader = document.getElementById('factLoader');
+            resultElement.textContent = ''; // Clear previous fact
+            loader.style.display = 'inline-block'; // Show loader
+
+            try {
+                let chatHistory = [];
+                // Prompt for generating a nature fact
+                const prompt = "Provide a short, interesting, and lesser-known fact about nature (animals, plants, geology, weather, etc.).";
+                chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+
+                const payload = { contents: chatHistory };
+                const apiKey = ""; // Leave as empty string for Canvas to provide
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const result = await response.json();
+
+                if (result.candidates && result.candidates.length > 0 &&
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0) {
+                    const text = result.candidates[0].content.parts[0].text;
+                    updateResult('natureFactResult', `Fact: ${text}`);
+                } else {
+                    updateResult('natureFactResult', 'Could not generate a nature fact. Please try again.', true);
+                }
+            } catch (error) {
+                console.error('Error fetching nature fact:', error);
+                updateResult('natureFactResult', 'Error generating fact. Please check console.', true);
+            } finally {
+                loader.style.display = 'none'; // Hide loader
+            }
+        }
+
+        // Initial setup for result areas to prevent 'error' class from previous sessions
+        window.onload = function() {
+            const resultAreas = document.querySelectorAll('.result-area');
+            resultAreas.forEach(area => area.classList.remove('error'));
+        };
+    </script>
+</body>
+</html>
